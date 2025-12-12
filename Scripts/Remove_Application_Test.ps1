@@ -105,11 +105,58 @@ function Remove-BingWallpaper {
         }
     }
 }
+
+function Remove-Zoom {
+    param ($session, $hostname)
+
+    try {
+        $users = Invoke-Command -Session $session -ScriptBlock {
+            Get-ChildItem -Path "C:\Users" -Directory | Select-Object -ExpandProperty Name
+        }
+
+        foreach ($user in $users) {
+            $localPath = "C:\Users\$user\AppData\Local\Zoom"
+            $roamingPath = "C:\Users\$user\AppData\Roaming\Zoom" 
+
+            Invoke-Command -Session $session -ScriptBlock {
+                param ($local, $roaming)
+                Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue
+                Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue
+            } -ArgumentList $localPath, $roamingPath
+        }
+
+        Write-Host "Zoom succesfully removed from $hostname"
+    } catch {
+        Write-Host "Trying to kill Zoom and retry. Please wait..."
+        Invoke-Command -Session $session -ScriptBlock {
+            Get-Process Zoom -ErrorAction SilentlyContinue | Stop-Process -Force
+        }
+        #Try to delete after killing Zoom
+        try {
+            foreach ($user in $users) {
+                $localPath = "C:\Users\$user\AppData\Local\Zoom"
+                $roamingPath = "C:\Users\$user\AppData\Roaming\Zoom"
+
+                Invoke-Command -Session $session -ScriptBlock {
+                    param($local, $roaming)
+                    Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue
+                    Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue
+                } -ArgumentList $localPath, $roamingPath
+            }
+
+            Write-Host "Killed and removed Zoom"
+        } catch {
+            Write-Host "Failed to kill and remove Zoom"
+        }
+    }
+}
+
 # Connect to each online computer and run the fuctions to remove the program
 foreach ($hostname in $online) {
     try {
         $session = New-PSSession -ComputerName $hostname -ErrorAction Stop
         Remove-BingWallpaper -session $session -hostname $hostname
+        Remove-Zoom -session $session -hostname $hostname
         Remove-PSSession $session
     } catch {
         Write-Host "Failed to connect to $hostname"
