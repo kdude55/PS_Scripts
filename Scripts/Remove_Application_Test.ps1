@@ -61,3 +61,58 @@ $workbook.SaveAs($offlinePath)
 $workbook.Close($false)
 $excel.Quit()
 
+#function to delete folders
+function Remove-BingWallpaper {
+    param ($session, $hostname)
+
+    try {
+        $users = Invoke-Command -Session $session -ScriptBlock {
+            Get-ChildItem -Path "C:\Users" -Directory | Select-Object -ExpandProperty Name
+        }
+
+        foreach ($user in $users) {
+            $localPath = "C:\Users\$user\AppData\Local\Microsoft\WindowsApps\Microsoft.BingWallpaper*"
+            $roamingPath = "C:\Users\$user\AppData\Roaming\Microsoft\WindowsApps\Microsoft.BingWallpaper*" 
+
+            Invoke-Command -Session $session -ScriptBlock {
+                param ($local, $roaming)
+                Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue
+                Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue
+            } -ArgumentList $localPath, $roamingPath
+        }
+
+        Write-Host "Bing Wallpaper succesfully removed from $hostname"
+    } catch {
+        Write-Host "Trying to kill bing wallpaper and retry. Please wait..."
+        Invoke-Command -Session $session -ScriptBlock {
+            Get-Process BingWallpaper -ErrorAction SilentlyContinue | Stop-Process -Force
+        }
+
+        try {
+            foreach ($user in $users) {
+                $localPath = "C:\Users\$user\AppData\Local\Microsoft\WindowsApps\Microsoft.BingWallpaper*"
+                $roamingPath = "C:\Users\$user\AppData\Roaming\Microsoft\WindowsApps\Microsoft.BingWallpaper*"
+
+                Invoke-Command -Session $session -ScriptBlock {
+                    param($local, $roaming)
+                    Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue
+                    Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue
+                } -ArgumentList $localPath, $roamingPath
+            }
+
+            Write-Host "Killed and removed Bing Wallpaper"
+        } catch {
+            Write-Host "Failed to kill and remove Bing Wallpaper"
+        }
+    }
+}
+
+foreach ($hostname in $online) {
+    try {
+        $session = New-PSSession -ComputerName $hostname -ErrorAction Stop
+        Remove-BingWallpaper -session $session -hostname $hostname
+        Remove-PSSession $session
+    } catch {
+        Write-Host "Failed to connect to $hostname"
+    }
+}
