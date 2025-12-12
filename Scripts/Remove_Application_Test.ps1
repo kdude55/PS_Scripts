@@ -7,8 +7,7 @@ array. I am going to start with bing wallpaper.
 #>
 
 # declare excel variables
-$user = $env:USERNAME
-$excelPath = "C:\Users\$user\Documents\ComputerList.xlsx"
+$excelPath = Read-Host -Prompt "Please enter the path to your excel file(MAKE SURE YOU DONT HAVE QUOTATION MARKS!)"
 $excel = New-Object -ComObject Excel.Application
 $workbook = $excel.Workbooks.Open($excelPath)
 $sheet = $workbook.Sheets.Item(1)
@@ -46,7 +45,7 @@ foreach ($computer in $computers) {
 
 # Export offline Array to Excel
 $today = Get-Date -Format "yyyyMMdd"
-$offlinePath = "C:\Users\$user\Documents\offline_$today.xlsx"
+$offlinePath = (Read-Host -Prompt "Where would you like me to save the excel file?") + "Offline_$today.xlsx"
 Write-Host "Exporting Data to" $offlinePath
 $excel = New-Object -ComObject Excel.Application
 $excel.Visible = $false
@@ -61,7 +60,7 @@ $workbook.SaveAs($offlinePath)
 $workbook.Close($false)
 $excel.Quit()
 
-#function to delete folders
+#function to delete Bing Wallpaper
 function Remove-BingWallpaper {
     param ($session, $hostname)
 
@@ -87,7 +86,7 @@ function Remove-BingWallpaper {
         Invoke-Command -Session $session -ScriptBlock {
             Get-Process BingWallpaper -ErrorAction SilentlyContinue | Stop-Process -Force
         }
-
+        #Try to delete after killing Bing Wallpaper
         try {
             foreach ($user in $users) {
                 $localPath = "C:\Users\$user\AppData\Local\Microsoft\WindowsApps\Microsoft.BingWallpaper*"
@@ -106,7 +105,7 @@ function Remove-BingWallpaper {
         }
     }
 }
-
+# Connect to each online computer and run the fuctions to remove the program
 foreach ($hostname in $online) {
     try {
         $session = New-PSSession -ComputerName $hostname -ErrorAction Stop
