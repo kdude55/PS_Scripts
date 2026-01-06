@@ -58,6 +58,8 @@ $offline |
 function Remove-BingWallpaper {
     param ($session, $hostname)
 
+    $removedBing = $false
+
     try {
         $users = Invoke-Command -Session $session -ScriptBlock {
             Get-ChildItem -Path "C:\Users" -Directory | Select-Object -ExpandProperty Name
@@ -67,16 +69,30 @@ function Remove-BingWallpaper {
             $localPath = "C:\Users\$user\AppData\Local\Microsoft\WindowsApps\Microsoft.BingWallpaper*"
             $roamingPath = "C:\Users\$user\AppData\Roaming\Microsoft\WindowsApps\Microsoft.BingWallpaper*" 
 
-            Invoke-Command -Session $session -ScriptBlock {
+            $result = Invoke-Command -Session $session -ScriptBlock {
                 param ($local, $roaming)
+                $deleted = $false
 
-                if (Test-Path -Path $local) {Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue}
-                if (Test-Path -Path $roaming) {Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue}
+                if (Test-Path -Path $local) {Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue; $deleted = $true}
+                if (Test-Path -Path $roaming) {Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue; $deleted = $true}
+
+                return $deleted
             } -ArgumentList $localPath, $roamingPath
+
+            if ($result) {
+                $removedBing = $true
+            }
         }
 
-        Write-Host "Bing Wallpaper successfully removed from $hostname"
+        if ($removedBing) {
+            Write-Host "Bing Wallpaper has been removed from $hostname"
+        } else {
+            Write-Host "Bing Wallpaper was not found on $hostname"
+        }
+
+        
     } catch {
+        Write-host "Error while removing Bing Wallpaper from ${hostname}:`n$($_.Exception.Message)"
         Write-Host "Trying to kill bing wallpaper and retry. Please wait..."
         Invoke-Command -Session $session -ScriptBlock {
             Get-Process BingWallpaper -ErrorAction SilentlyContinue | Stop-Process -Force
@@ -87,18 +103,30 @@ function Remove-BingWallpaper {
                 $localPath = "C:\Users\$user\AppData\Local\Microsoft\WindowsApps\Microsoft.BingWallpaper*"
                 $roamingPath = "C:\Users\$user\AppData\Roaming\Microsoft\WindowsApps\Microsoft.BingWallpaper*"
 
-                Invoke-Command -Session $session -ScriptBlock {
+                $result = Invoke-Command -Session $session -ScriptBlock {
                     param ($local, $roaming)
+                    $deleted = $false
 
-                    if (Test-Path -Path $local) {Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue}
-                    if (Test-Path -Path $roaming) {Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue}
+                    if (Test-Path -Path $local) {Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue; $deleted = $true}
+                    if (Test-Path -Path $roaming) {Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue; $deleted = $true}
+
+                    return $deleted
                 } -ArgumentList $localPath, $roamingPath
+
+                if ($result) {
+                    $removedBing = $true
+                }
             }
 
-            Write-Host "Killed and removed Bing Wallpaper"
+            if ($removedBing) {
+                Write-Host "Bing Wallpaper has been removed from $hostname after killing the process"
+            } else {
+                Write-Host "Bing wallpaper was not found on $hostname"
+            }
+
         } catch {
-            Write-Host $_
-            Write-Host "Failed to kill and remove Bing Wallpaper"
+            Write-host "Error while removing Bing Wallpaper from ${hostname}:`n$($_.Exception.Message)"
+            Write-Host "Bing Wallpaper could not be removed"
         }
     }
 }
@@ -106,6 +134,8 @@ function Remove-BingWallpaper {
 #Function to delete Zoom
 function Remove-Zoom {
     param ($session, $hostname)
+
+    $removedZoom = $false
 
     try {
         $users = Invoke-Command -Session $session -ScriptBlock {
@@ -116,16 +146,30 @@ function Remove-Zoom {
             $localPath = "C:\Users\$user\AppData\Local\Zoom"
             $roamingPath = "C:\Users\$user\AppData\Roaming\Zoom" 
 
-            Invoke-Command -Session $session -ScriptBlock {
+            $result = Invoke-Command -Session $session -ScriptBlock {
                 param ($local, $roaming)
 
-                if (Test-Path -Path $local) {Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue}
-                if (Test-Path -Path $roaming) {Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue}
+                $deleted = $false
+
+                if (Test-Path -Path $local) {Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue; $deleted = $true}
+                if (Test-Path -Path $roaming) {Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue; $deleted = $true}
+
+                return $deleted
             } -ArgumentList $localPath, $roamingPath
+
+            if ($result) {
+                $removedZoom = $true
+            }
         }
 
-        Write-Host "Zoom successfully removed from $hostname"
+        if ($removedZoom) {
+            Write-Host "Zoom has been removed from $hostname"
+        } else {
+            Write-Host "Zoom was not found on $hostname"
+        }
+
     } catch {
+        Write-Host "Error while removing Zoom from ${hostname}:`n$($_.Exception.Message)"
         Write-Host "Trying to kill Zoom and retry. Please wait..."
         Invoke-Command -Session $session -ScriptBlock {
             Get-Process Zoom -ErrorAction SilentlyContinue | Stop-Process -Force
@@ -136,17 +180,30 @@ function Remove-Zoom {
                 $localPath = "C:\Users\$user\AppData\Local\Zoom"
                 $roamingPath = "C:\Users\$user\AppData\Roaming\Zoom"
 
-                Invoke-Command -Session $session -ScriptBlock {
+                $result = Invoke-Command -Session $session -ScriptBlock {
                     param ($local, $roaming)
 
-                    if (Test-Path -Path $local) {Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue}
-                    if (Test-Path -Path $roaming) {Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue}
+                    $deleted = $false
+
+                    if (Test-Path -Path $local) {Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue; $deleted = $true}
+                    if (Test-Path -Path $roaming) {Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue; $deleted = $true}
+
+                    return $deleted
                 } -ArgumentList $localPath, $roamingPath
+
+                if ($result) {
+                    $removedZoom = $true
+                }
             }
 
-            Write-Host "Killed and removed Zoom"
+            if ($removedZoom) {
+                Write-Host "Zoom has been removed after killing the process on $hostname"
+            } else {
+                Write-Host "Zoom could not be found on $hostname"
+            }
+
         } catch {
-            Write-Host $_
+            Write-Host "Error while removing Zoom from ${hostname}:`n$($_.Exception.Message)"
             Write-Host "Failed to kill and remove Zoom"
         }
     }
@@ -192,6 +249,8 @@ function Remove-DCU {
 function Remove-Spotify {
     param ($session, $hostname)
 
+    $removedSpotify = $false
+
     try {
         $users = Invoke-Command -Session $session -ScriptBlock {
             Get-ChildItem -Path "C:\Users" -Directory | Select-Object -ExpandProperty Name
@@ -203,19 +262,32 @@ function Remove-Spotify {
             $downloadPath = "C:\Users\$user\Downloads\Spotify*"
             $programPath = "C:\Program Files\WindowsApps\Spotify*"
 
-            Invoke-Command -Session $session -ScriptBlock {
+            $result = Invoke-Command -Session $session -ScriptBlock {
                 param ($local, $roaming, $download, $program)
 
-                if (Test-Path -Path $local) {Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue}
-                if (Test-Path -Path $roaming) {Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue}
-                if (Test-Path -Path $download) {Remove-Item -Path $download -Recurse -Force -ErrorAction SilentlyContinue}
-                if (Test-Path -Path $program) {Remove-Item -Path $program -Recurse -Force -ErrorAction SilentlyContinue}
+                $deleted = $false
+
+                if (Test-Path -Path $local) {Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue; $deleted = $true}
+                if (Test-Path -Path $roaming) {Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue; $deleted = $true}
+                if (Test-Path -Path $download) {Remove-Item -Path $download -Recurse -Force -ErrorAction SilentlyContinue; $deleted = $true}
+                if (Test-Path -Path $program) {Remove-Item -Path $program -Recurse -Force -ErrorAction SilentlyContinue; $deleted = $true}
+
+                return $deleted
             } -ArgumentList $localPath, $roamingPath, $downloadPath, $programPath
+
+            if ($result) {
+                $removedSpotify = $true
+            }
         }
 
-        Write-Host "Spotify successfully removed from $hostname"
+        if ($removedSpotify) {
+            Write-Host "Spotify has been removed from $hostname"
+        } else {
+            Write-Host "Spotify could not be found on $hostname"
+        }
+
     } catch {
-        Write-Host "Could not remove Spotify from ${hostname}:`n$($_.Exception.Message)"
+        Write-Host "Error while removing Spotify from ${hostname}:`n$($_.Exception.Message)"
         Write-Host "Trying to kill Spotify and retry. Please wait..."
 
         Invoke-Command -Session $session -ScriptBlock {
@@ -229,19 +301,33 @@ function Remove-Spotify {
                 $downloadPath = "C:\Users\$user\Downloads\Spotify*"
                 $programPath = "C:\Program Files\WindowsApps\Spotify*"
 
-                Invoke-Command -Session $session -ScriptBlock {
+                $result = Invoke-Command -Session $session -ScriptBlock {
                     param ($local, $roaming, $download, $program)
 
-                    if (Test-Path -Path $local) {Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue}
-                    if (Test-Path -Path $roaming) {Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue}
-                    if (Test-Path -Path $download) {Remove-Item -Path $download -Recurse -Force -ErrorAction SilentlyContinue}
-                    if (Test-Path -Path $program) {Remove-Item -Path $program -Recurse -Force -ErrorAction SilentlyContinue}
+                    $deleted = $false
+
+                    if (Test-Path -Path $local) {Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue; $deleted = $true}
+                    if (Test-Path -Path $roaming) {Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue; $deleted = $true}
+                    if (Test-Path -Path $download) {Remove-Item -Path $download -Recurse -Force -ErrorAction SilentlyContinue; $deleted = $true}
+                    if (Test-Path -Path $program) {Remove-Item -Path $program -Recurse -Force -ErrorAction SilentlyContinue; $deleted = $true}
+
+                    return $deleted
+
                 } -ArgumentList $localPath, $roamingPath, $downloadPath, $programPath
+
+                if ($result) {
+                    $removedSpotify = $true
+                }
             }
 
-            Write-Host "Killed and removed Spotify"
+            if ($removedSpotify) {
+                Write-Host "Spotify has been removed after killing process on $hostname"
+            } else {
+                Write-Host "Spotify could not be found on $hostname"
+            }
+
         } catch {
-            Write-Host "unable to kill and remove Spotify from ${hostname}:`n$($_.Exception.Message)"
+            Write-Host "Error while removing Spotify from ${hostname}:`n$($_.Exception.Message)"
             Write-Host "Failed to kill and remove Spotify"
         }
     }
