@@ -331,8 +331,21 @@ function Remove-Spotify {
             Write-Host "Failed to kill and remove Spotify"
         }
     }
+}
 
-    
+function Invoke-SCCMSoftwareInventory {
+    param($session, $hostname)
+
+    try {
+        Invoke-Command -Session $session -ScriptBlock {
+            Invoke-WmiMethod -Namespace 'root\ccm' -Class 'SMS_Client' -Name TriggerSchedule -ArgumentList '{00000000-0000-0000-0000-000000000002}'
+        }
+
+        Write-Host "Triggered SCCM software inventory on $hostname"
+    }
+    catch {
+        Write-Host "Failed to trigger SCCM software inventory on ${hostname}:`n$($_.Exception.Message)"
+    }
 }
 
 # Connect to each online computer and run the fuctions to remove the program
@@ -342,8 +355,11 @@ foreach ($hostname in $online) {
         Remove-BingWallpaper -session $session -hostname $hostname
         Remove-Zoom -session $session -hostname $hostname
         Remove-Spotify -session $session -hostname $hostname
+        Invoke-SCCMSoftwareInventory -session $session -hostname $hostname
         Remove-PSSession $session
     } catch {
-        Write-Host "Failed to connect to ${hostname}:`n$($_.Exception.Message)"
+        Write-Host "Failed to connect to $hostname"
+        Write-Host ""
+        Write-Host $($_.Exception.Message) -ForegroundColor Red
     }
 }
