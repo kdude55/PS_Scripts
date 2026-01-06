@@ -43,22 +43,16 @@ foreach ($computer in $computers) {
     }
 }
 
-# Export offline Array to Excel
+# Export offline Array to CSV
 $today = Get-Date -Format "yyyyMMdd"
-$offlinePath = (Read-Host -Prompt "Where would you like me to save the excel file?") + "Offline_$today.xlsx"
-Write-Host "Exporting Data to" $offlinePath
-$excel = New-Object -ComObject Excel.Application
-$excel.Visible = $false
-$workbook = $excel.Workbooks.Add()
-$sheet = $workbook.Sheets.Item(1)
+$folder = Read-Host -Prompt "Where would you like me to save the CSV file?"
+$offlinePath = Join-Path $folder "Offline_$today.csv"
 
-for ($i = 0; $i -lt $offline.Count; $i++) {
-    $sheet.Cells.Item($i + 1, 1) = $offline[$i]
-}
+Write-Host "Exporting data to $offlinePath"
 
-$workbook.SaveAs($offlinePath)
-$workbook.Close($false)
-$excel.Quit()
+$offline |
+    ForEach-Object { [PSCustomObject]@{ ComputerName = $_ } } |
+    Export-Csv -Path $offlinePath -NoTypeInformation
 
 #function to delete Bing Wallpaper
 function Remove-BingWallpaper {
@@ -75,12 +69,13 @@ function Remove-BingWallpaper {
 
             Invoke-Command -Session $session -ScriptBlock {
                 param ($local, $roaming)
-                Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue
-                Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue
+
+                if (Test-Path -Path $local) {Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue}
+                if (Test-Path -Path $roaming) {Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue}
             } -ArgumentList $localPath, $roamingPath
         }
 
-        Write-Host "Bing Wallpaper succesfully removed from $hostname"
+        Write-Host "Bing Wallpaper successfully removed from $hostname"
     } catch {
         Write-Host "Trying to kill bing wallpaper and retry. Please wait..."
         Invoke-Command -Session $session -ScriptBlock {
@@ -93,19 +88,22 @@ function Remove-BingWallpaper {
                 $roamingPath = "C:\Users\$user\AppData\Roaming\Microsoft\WindowsApps\Microsoft.BingWallpaper*"
 
                 Invoke-Command -Session $session -ScriptBlock {
-                    param($local, $roaming)
-                    Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue
-                    Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue
+                    param ($local, $roaming)
+
+                    if (Test-Path -Path $local) {Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue}
+                    if (Test-Path -Path $roaming) {Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue}
                 } -ArgumentList $localPath, $roamingPath
             }
 
             Write-Host "Killed and removed Bing Wallpaper"
         } catch {
+            Write-Host $_
             Write-Host "Failed to kill and remove Bing Wallpaper"
         }
     }
 }
 
+#Function to delete Zoom
 function Remove-Zoom {
     param ($session, $hostname)
 
@@ -120,12 +118,13 @@ function Remove-Zoom {
 
             Invoke-Command -Session $session -ScriptBlock {
                 param ($local, $roaming)
-                Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue
-                Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue
+
+                if (Test-Path -Path $local) {Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue}
+                if (Test-Path -Path $roaming) {Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue}
             } -ArgumentList $localPath, $roamingPath
         }
 
-        Write-Host "Zoom succesfully removed from $hostname"
+        Write-Host "Zoom successfully removed from $hostname"
     } catch {
         Write-Host "Trying to kill Zoom and retry. Please wait..."
         Invoke-Command -Session $session -ScriptBlock {
@@ -138,17 +137,116 @@ function Remove-Zoom {
                 $roamingPath = "C:\Users\$user\AppData\Roaming\Zoom"
 
                 Invoke-Command -Session $session -ScriptBlock {
-                    param($local, $roaming)
-                    Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue
-                    Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue
+                    param ($local, $roaming)
+
+                    if (Test-Path -Path $local) {Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue}
+                    if (Test-Path -Path $roaming) {Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue}
                 } -ArgumentList $localPath, $roamingPath
             }
 
             Write-Host "Killed and removed Zoom"
         } catch {
+            Write-Host $_
             Write-Host "Failed to kill and remove Zoom"
         }
     }
+}
+
+<#Function to delete Dell Command Update Commented out to continue working on this
+function Remove-DCU {
+    param ($session, $hostname)
+
+    $dcuPath = "C:\Program Files (x86)\Dell\CommandUpdate"
+    
+    try {
+        Invoke-Command -Session $session -ScriptBlock {
+            param($path)
+            Remove-Item -Path $path -Recurse -Force -ErrorAction Stop
+        } -ArgumentList $dcuPath
+
+        Write-Host "DCU successfully removed from $hostname"
+    } catch {
+        Write-Host "Trying to kill Dell services and retry. Please Wait..."
+        Invoke-Command -Session $session -ScriptBlock {
+            Get-Process Dell* -ErrorAction SilentlyContinue | Stop-Process -Force
+        }
+        try {
+            Invoke-Command -Session $session -ScriptBlock {
+                param($path)
+                Remove-Item -Path $path -Recurse -Force -ErrorAction Stop
+            } -ArgumentList $dcuPath
+
+            Write-Host "DCU Successfully removed from host after killing Dell"
+        } catch {
+            Write-Host $_
+            Write-Host "Failed to remove DCU"
+        }
+    }
+
+    
+}
+#>
+
+#Function to remove Spotify
+
+function Remove-Spotify {
+    param ($session, $hostname)
+
+    try {
+        $users = Invoke-Command -Session $session -ScriptBlock {
+            Get-ChildItem -Path "C:\Users" -Directory | Select-Object -ExpandProperty Name
+        }
+
+        foreach ($user in $users) {
+            $localPath = "C:\Users\$user\AppData\Local\Microsoft\WindowsApps\Spotify*"
+            $roamingPath = "C:\Users\$user\AppData\Roaming\Microsoft\WindowsApps\Spotify*" 
+            $downloadPath = "C:\Users\$user\Downloads\Spotify*"
+            $programPath = "C:\Program Files\WindowsApps\Spotify*"
+
+            Invoke-Command -Session $session -ScriptBlock {
+                param ($local, $roaming, $download, $program)
+
+                if (Test-Path -Path $local) {Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue}
+                if (Test-Path -Path $roaming) {Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue}
+                if (Test-Path -Path $download) {Remove-Item -Path $download -Recurse -Force -ErrorAction SilentlyContinue}
+                if (Test-Path -Path $program) {Remove-Item -Path $program -Recurse -Force -ErrorAction SilentlyContinue}
+            } -ArgumentList $localPath, $roamingPath, $downloadPath, $programPath
+        }
+
+        Write-Host "Spotify successfully removed from $hostname"
+    } catch {
+        Write-Host "Could not remove Spotify from ${hostname}:`n$($_.Exception.Message)"
+        Write-Host "Trying to kill Spotify and retry. Please wait..."
+
+        Invoke-Command -Session $session -ScriptBlock {
+            Get-Process spotify* -ErrorAction SilentlyContinue | Stop-Process -Force
+        }
+        #Try to delete after killing Spotify
+        try {
+            foreach ($user in $users) {
+                $localPath = "C:\Users\$user\AppData\Local\Microsoft\WindowsApps\Spotify*"
+                $roamingPath = "C:\Users\$user\AppData\Roaming\Microsoft\WindowsApps\Spotify*"
+                $downloadPath = "C:\Users\$user\Downloads\Spotify*"
+                $programPath = "C:\Program Files\WindowsApps\Spotify*"
+
+                Invoke-Command -Session $session -ScriptBlock {
+                    param ($local, $roaming, $download, $program)
+
+                    if (Test-Path -Path $local) {Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue}
+                    if (Test-Path -Path $roaming) {Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue}
+                    if (Test-Path -Path $download) {Remove-Item -Path $download -Recurse -Force -ErrorAction SilentlyContinue}
+                    if (Test-Path -Path $program) {Remove-Item -Path $program -Recurse -Force -ErrorAction SilentlyContinue}
+                } -ArgumentList $localPath, $roamingPath, $downloadPath, $programPath
+            }
+
+            Write-Host "Killed and removed Spotify"
+        } catch {
+            Write-Host "unable to kill and remove Spotify from ${hostname}:`n$($_.Exception.Message)"
+            Write-Host "Failed to kill and remove Spotify"
+        }
+    }
+
+    
 }
 
 # Connect to each online computer and run the fuctions to remove the program
@@ -157,8 +255,9 @@ foreach ($hostname in $online) {
         $session = New-PSSession -ComputerName $hostname -ErrorAction Stop
         Remove-BingWallpaper -session $session -hostname $hostname
         Remove-Zoom -session $session -hostname $hostname
+        Remove-Spotify -session $session -hostname $hostname
         Remove-PSSession $session
     } catch {
-        Write-Host "Failed to connect to $hostname"
+        Write-Host "Failed to connect to ${hostname}:`n$($_.Exception.Message)"
     }
 }
