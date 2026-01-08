@@ -35,10 +35,10 @@ $offline = @()
 foreach ($computer in $computers) {
     Write-Host "Pinging " $computer "Please Wait..."
     if (Test-Connection -ComputerName $computer -Count 2 -Quiet) {
-        Write-Host "ONLINE"
+        Write-Host "ONLINE" -ForegroundColor Green
         $online += $computer
     } else {
-        Write-Host $computer "OFFLINE"
+        Write-Host $computer "OFFLINE" -ForegroundColor Red
         $offline += $computer
     }
 }
@@ -85,14 +85,14 @@ function Remove-BingWallpaper {
         }
 
         if ($removedBing) {
-            Write-Host "Bing Wallpaper has been removed from $hostname"
+            Write-Host "Bing Wallpaper has been removed from $hostname" -ForegroundColor Green
         } else {
-            Write-Host "Bing Wallpaper was not found on $hostname"
+            Write-Host "Bing Wallpaper was not found on $hostname" -ForegroundColor Yellow
         }
 
         
     } catch {
-        Write-host "Error while removing Bing Wallpaper from ${hostname}:`n$($_.Exception.Message)"
+        Write-host "Error while removing Bing Wallpaper from ${hostname}:`n$($_.Exception.Message)" -ForegroundColor Red
         Write-Host "Trying to kill bing wallpaper and retry. Please wait..."
         Invoke-Command -Session $session -ScriptBlock {
             Get-Process BingWallpaper -ErrorAction SilentlyContinue | Stop-Process -Force
@@ -119,14 +119,14 @@ function Remove-BingWallpaper {
             }
 
             if ($removedBing) {
-                Write-Host "Bing Wallpaper has been removed from $hostname after killing the process"
+                Write-Host "Bing Wallpaper has been removed from $hostname after killing the process" -ForegroundColor Green
             } else {
-                Write-Host "Bing wallpaper was not found on $hostname"
+                Write-Host "Bing wallpaper was not found on $hostname" -ForegroundColor Yellow
             }
 
         } catch {
-            Write-host "Error while removing Bing Wallpaper from ${hostname}:`n$($_.Exception.Message)"
-            Write-Host "Bing Wallpaper could not be removed"
+            Write-host "Error while removing Bing Wallpaper from ${hostname}:`n$($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "Bing Wallpaper could not be removed" -ForegroundColor Red
         }
     }
 }
@@ -163,13 +163,13 @@ function Remove-Zoom {
         }
 
         if ($removedZoom) {
-            Write-Host "Zoom has been removed from $hostname"
+            Write-Host "Zoom has been removed from $hostname" -ForegroundColor Green
         } else {
-            Write-Host "Zoom was not found on $hostname"
+            Write-Host "Zoom was not found on $hostname" -ForegroundColor Yellow
         }
 
     } catch {
-        Write-Host "Error while removing Zoom from ${hostname}:`n$($_.Exception.Message)"
+        Write-Host "Error while removing Zoom from ${hostname}:`n$($_.Exception.Message)" -ForegroundColor Red
         Write-Host "Trying to kill Zoom and retry. Please wait..."
         Invoke-Command -Session $session -ScriptBlock {
             Get-Process Zoom -ErrorAction SilentlyContinue | Stop-Process -Force
@@ -197,14 +197,14 @@ function Remove-Zoom {
             }
 
             if ($removedZoom) {
-                Write-Host "Zoom has been removed after killing the process on $hostname"
+                Write-Host "Zoom has been removed after killing the process on $hostname" -ForegroundColor Green
             } else {
-                Write-Host "Zoom could not be found on $hostname"
+                Write-Host "Zoom could not be found on $hostname" -ForegroundColor Yellow
             }
 
         } catch {
-            Write-Host "Error while removing Zoom from ${hostname}:`n$($_.Exception.Message)"
-            Write-Host "Failed to kill and remove Zoom"
+            Write-Host "Error while removing Zoom from ${hostname}:`n$($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "Failed to kill and remove Zoom" -ForegroundColor Red
         }
     }
 }
@@ -281,13 +281,13 @@ function Remove-Spotify {
         }
 
         if ($removedSpotify) {
-            Write-Host "Spotify has been removed from $hostname"
+            Write-Host "Spotify has been removed from $hostname" -ForegroundColor Green
         } else {
-            Write-Host "Spotify could not be found on $hostname"
+            Write-Host "Spotify could not be found on $hostname" -ForegroundColor Yellow
         }
 
     } catch {
-        Write-Host "Error while removing Spotify from ${hostname}:`n$($_.Exception.Message)"
+        Write-Host "Error while removing Spotify from ${hostname}:`n$($_.Exception.Message)" -ForegroundColor Red
         Write-Host "Trying to kill Spotify and retry. Please wait..."
 
         Invoke-Command -Session $session -ScriptBlock {
@@ -321,14 +321,14 @@ function Remove-Spotify {
             }
 
             if ($removedSpotify) {
-                Write-Host "Spotify has been removed after killing process on $hostname"
+                Write-Host "Spotify has been removed after killing process on $hostname" -ForegroundColor Green
             } else {
-                Write-Host "Spotify could not be found on $hostname"
+                Write-Host "Spotify could not be found on $hostname" -ForegroundColor Yellow
             }
 
         } catch {
-            Write-Host "Error while removing Spotify from ${hostname}:`n$($_.Exception.Message)"
-            Write-Host "Failed to kill and remove Spotify"
+            Write-Host "Error while removing Spotify from ${hostname}:`n$($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "Failed to kill and remove Spotify" -ForegroundColor Red
         }
     }
 }
@@ -344,7 +344,7 @@ function Invoke-SCCMSoftwareInventory {
         Write-Host "Triggered SCCM software inventory on $hostname"
     }
     catch {
-        Write-Host "Failed to trigger SCCM software inventory on ${hostname}:`n$($_.Exception.Message)"
+        Write-Host "Failed to trigger SCCM software inventory on ${hostname}:`n$($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
