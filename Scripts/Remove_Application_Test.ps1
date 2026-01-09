@@ -413,6 +413,7 @@ function Remove-DuckDuckGo {
     }
 }
 
+#function to update SCCM
 function Invoke-SCCMSoftwareInventory {
     param($session, $hostname)
 
