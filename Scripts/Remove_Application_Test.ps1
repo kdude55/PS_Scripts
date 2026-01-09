@@ -336,6 +336,83 @@ function Remove-Spotify {
     }
 }
 
+# remove Duck Duck Go
+function Remove-DuckDuckGo {
+    param ($session, $hostname)
+
+    $removedDDG = $false
+
+    try {
+        $users = Invoke-Command -Session $session -ScriptBlock {
+            Get-ChildItem -Path "C:\Users" -Directory | Select-Object -ExpandProperty Name
+        }
+
+        foreach ($user in $users) {
+            $localPath = "C:\Users\$user\AppData\Local\Microsoft\WindowsApps\DuckDuckGo*"
+            $roamingPath = "C:\Users\$user\AppData\Roaming\Microsoft\WindowsApps\DuckDuckGo*" 
+
+            $result = Invoke-Command -Session $session -ScriptBlock {
+                param ($local, $roaming)
+                $deleted = $false
+
+                if (Test-Path -Path $local) {Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue; $deleted = $true}
+                if (Test-Path -Path $roaming) {Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue; $deleted = $true}
+
+                return $deleted
+            } -ArgumentList $localPath, $roamingPath
+
+            if ($result) {
+                $removedDDG = $true
+            }
+        }
+
+        if ($removedDDG) {
+            Write-Host "Duck Duck Go has been removed from $hostname" -ForegroundColor Green
+        } else {
+            Write-Host "Duck Duck Go was not found on $hostname" -ForegroundColor Yellow
+        }
+
+        
+    } catch {
+        Write-host "Error while removing Duck Duck Go from ${hostname}:`n$($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "Trying to kill Duck Duck Go and retry. Please wait..."
+        Invoke-Command -Session $session -ScriptBlock {
+            Get-Process Duck* -ErrorAction SilentlyContinue | Stop-Process -Force
+        }
+        #Try to delete after killing Duck Duck Go
+        try {
+            foreach ($user in $users) {
+                $localPath = "C:\Users\$user\AppData\Local\Microsoft\WindowsApps\DuckDuckGo*"
+                $roamingPath = "C:\Users\$user\AppData\Roaming\Microsoft\WindowsApps\DuckDuckGo*"
+
+                $result = Invoke-Command -Session $session -ScriptBlock {
+                    param ($local, $roaming)
+                    $deleted = $false
+
+                    if (Test-Path -Path $local) {Remove-Item -Path $local -Recurse -Force -ErrorAction SilentlyContinue; $deleted = $true}
+                    if (Test-Path -Path $roaming) {Remove-Item -Path $roaming -Recurse -Force -ErrorAction SilentlyContinue; $deleted = $true}
+
+                    return $deleted
+                } -ArgumentList $localPath, $roamingPath
+
+                if ($result) {
+                    $removedDDG = $true
+                }
+            }
+
+            if ($removedDDG) {
+                Write-Host "Duck Duck Go has been removed from $hostname after killing the process" -ForegroundColor Green
+            } else {
+                Write-Host "Duck Duck Go was not found on $hostname" -ForegroundColor Yellow
+            }
+
+        } catch {
+            Write-host "Error while removing Duck Duck Go from ${hostname}:`n$($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "Duck Duck Go could not be removed" -ForegroundColor Red
+        }
+    }
+}
+
 function Invoke-SCCMSoftwareInventory {
     param($session, $hostname)
 
@@ -358,6 +435,7 @@ foreach ($hostname in $online) {
         Remove-BingWallpaper -session $session -hostname $hostname
         Remove-Zoom -session $session -hostname $hostname
         Remove-Spotify -session $session -hostname $hostname
+        Remove-DuckDuckGo -session $session -hostname $hostname
         Invoke-SCCMSoftwareInventory -session $session -hostname $hostname
         Remove-PSSession $session
     } catch {
