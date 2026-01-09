@@ -43,6 +43,9 @@ foreach ($computer in $computers) {
     }
 }
 
+$userInput = Read-Host "Would you like to save offline computers in a CSV?"
+
+if ($userInput -eq "y" -or $userInput -eq "yes") {
 # Export offline Array to CSV
 $today = Get-Date -Format "yyyyMMdd"
 $folder = Read-Host -Prompt "Where would you like me to save the CSV file?"
@@ -53,7 +56,7 @@ Write-Host "Exporting data to $offlinePath"
 $offline |
     ForEach-Object { [PSCustomObject]@{ ComputerName = $_ } } |
     Export-Csv -Path $offlinePath -NoTypeInformation
-
+} 
 #function to delete Bing Wallpaper
 function Remove-BingWallpaper {
     param ($session, $hostname)
